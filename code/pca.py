@@ -29,10 +29,29 @@ class PCAAnimation(ThreeDScene):
         
         # Calculate covariance matrix and eigenvectors
         cov_matrix = np.cov(centered_data.T)
-        eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
-        
+
+        # Check if covariance matrix is valid
+        if cov_matrix.size == 0:
+            raise ValueError("Covariance matrix is empty")
+
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)  # More stable for symmetric matrices
+
+        # Check if eigenvalues and eigenvectors are valid
+        if eigenvalues.size == 0:
+            raise ValueError("Eigenvalue decomposition failed - got empty eigenvalues array")
+        if eigenvectors.size == 0:
+            raise ValueError("Eigenvalue decomposition failed - got empty eigenvectors array")
+
+        # Handle complex eigenvalues (take real part for visualization)
+        if np.iscomplexobj(eigenvalues):
+            eigenvalues = np.real(eigenvalues)
+        if np.iscomplexobj(eigenvectors):
+            eigenvectors = np.real(eigenvectors)
+
         # Get the principal component (eigenvector with largest eigenvalue)
-        pc_direction = eigenvectors[:, np.argmax(eigenvalues)]
+        # eigh returns eigenvalues in ascending order, so take the last one
+        max_eigenvalue_idx = -1  # Last eigenvalue is the largest
+        pc_direction = eigenvectors[:, max_eigenvalue_idx]
         pc_direction = pc_direction / np.linalg.norm(pc_direction)
         
         # Create 3D coordinate system
@@ -48,22 +67,23 @@ class PCAAnimation(ThreeDScene):
         
         # Create data points as 3D dots
         dots_3d = VGroup()
-        colors = [interpolate_color(BLUE, RED, i/n_points) for i in range(n_points)]
-        
-        for i, point in enumerate(original_points):
+
+        # Use a consistent style for the original 3D points (blue) instead of a color gradient
+        for point in original_points:
             dot = Dot3D(
                 point=point,
-                radius=0.08,
-                color=colors[i]
+                radius=0.06,
+                color=BLUE
             )
             dots_3d.add(dot)
         
         # Show initial setup
         self.add(axes)
-        self.play(
-            *[Create(dot) for dot in dots_3d],
-            run_time=2
-        )
+        if len(dots_3d) > 0:
+            self.play(
+                *[Create(dot) for dot in dots_3d],
+                run_time=2
+            )
         self.wait(1)
         
         # Create and show principal component line
@@ -85,7 +105,7 @@ class PCAAnimation(ThreeDScene):
         projection_lines = VGroup()
         projected_dots = VGroup()
         
-        for i, point in enumerate(original_points):
+        for point in original_points:
             # Project point onto principal component line
             point_centered = point - mean_point
             projection_scalar = np.dot(point_centered, pc_direction)
@@ -93,64 +113,65 @@ class PCAAnimation(ThreeDScene):
             projections.append(projection)
             
             # Create dotted line from original point to projection
-            proj_line = DashedVMobject(
-                Line3D(
+            # Only create line if points are sufficiently different
+            if np.linalg.norm(point - projection) > 1e-10:
+                proj_line = Line3D(
                     start=point,
                     end=projection,
                     color=GRAY,
                     stroke_width=2
-                ),
-                num_dashes=15,
-                positive_space_ratio=0.4
-            )
-            projection_lines.add(proj_line)
+                )
+                # Make it dashed by setting stroke_opacity pattern
+                proj_line.set_stroke(opacity=0.7)
+                projection_lines.add(proj_line)
             
             # Create projected point
+            # Projected points are styled in red to highlight the 1-D representation
             proj_dot = Dot3D(
                 point=projection,
                 radius=0.06,
-                color=colors[i]
+                color=RED
             )
             projected_dots.add(proj_dot)
         
         # Animate projections
-        self.play(
-            *[Create(line) for line in projection_lines],
-            run_time=2
-        )
+        if len(projection_lines) > 0:
+            self.play(
+                *[Create(line) for line in projection_lines],
+                run_time=2
+            )
         
-        self.play(
-            *[Create(dot) for dot in projected_dots],
-            run_time=1.5
-        )
+        if len(projected_dots) > 0:
+            self.play(
+                *[Create(dot) for dot in projected_dots],
+                run_time=1.5
+            )
         self.wait(1)
         
         # Move camera closer to the principal component
-        self.play(
-            self.camera.frame.animate.set(
-                phi=80 * DEGREES,
-                theta=0 * DEGREES,
-                zoom=1.5
-            ),
+        self.move_camera(
+            phi=80 * DEGREES,
+            theta=0 * DEGREES,
+            zoom=1.5,
             run_time=2
         )
         self.wait(0.5)
         
         # Fade out original 3D points and projection lines to focus on 1D result
-        self.play(
-            *[FadeOut(dot) for dot in dots_3d],
-            *[FadeOut(line) for line in projection_lines],
-            FadeOut(axes),
-            run_time=1.5
-        )
+        fade_animations = []
+        if len(dots_3d) > 0:
+            fade_animations.extend([FadeOut(dot) for dot in dots_3d])
+        if len(projection_lines) > 0:
+            fade_animations.extend([FadeOut(line) for line in projection_lines])
+        fade_animations.append(FadeOut(axes))
+        
+        self.play(*fade_animations, run_time=1.5)
         
         # Rotate to show the 1D line more clearly
-        self.play(
-            self.camera.frame.animate.set(
-                phi=90 * DEGREES,
-                theta=0 * DEGREES,
-                zoom=2
-            ),
+        self.move_camera(
+            phi=90 * DEGREES,
+            theta=0 * DEGREES,
+            zoom=2,
             run_time=2
         )
         
@@ -166,12 +187,10 @@ class PCAAnimation(ThreeDScene):
         self.wait(2)
         
         # Final rotation to show the result from different angles
-        self.play(
-            self.camera.frame.animate.set(
-                phi=75 * DEGREES,
-                theta=45 * DEGREES,
-                zoom=1.8
-            ),
+        self.move_camera(
+            phi=75 * DEGREES,
+            theta=45 * DEGREES,
+            zoom=1.8,
             run_time=2
         )
         
@@ -211,15 +230,35 @@ class PCAConceptual(ThreeDScene):
             point_cloud.add(dot)
         
         self.add(axes)
-        self.play(*[FadeIn(dot) for dot in point_cloud], run_time=2)
+        if len(point_cloud) > 0:
+            self.play(*[FadeIn(dot) for dot in point_cloud], run_time=2)
         
         # Show PCA direction
         mean_pos = np.mean(points_3d, axis=0)
         centered = points_3d - mean_pos
         cov = np.cov(centered.T)
-        eigenvals, eigenvecs = np.linalg.eig(cov)
-        pc1 = eigenvecs[:, np.argmax(eigenvals)]
-        
+
+        # Check if covariance matrix is valid
+        if cov.size == 0:
+            raise ValueError("PCAConceptual - Covariance matrix is empty")
+
+        eigenvals, eigenvecs = np.linalg.eigh(cov)  # Use eigh for symmetric matrices
+
+        # Check if eigenvalues and eigenvectors are valid
+        if eigenvals.size == 0:
+            raise ValueError("PCAConceptual - Eigenvalue decomposition failed - got empty eigenvalues array")
+        if eigenvecs.size == 0:
+            raise ValueError("PCAConceptual - Eigenvalue decomposition failed - got empty eigenvectors array")
+
+        # Handle complex eigenvalues (take real part for visualization)
+        if np.iscomplexobj(eigenvals):
+            eigenvals = np.real(eigenvals)
+        if np.iscomplexobj(eigenvecs):
+            eigenvecs = np.real(eigenvecs)
+
+        max_eigenval_idx = -1  # Last eigenvalue is the largest with eigh
+        pc1 = eigenvecs[:, max_eigenval_idx]
+
         pc_line = Line3D(
             start=mean_pos - 3*pc1,
             end=mean_pos + 3*pc1,
@@ -240,25 +279,32 @@ class PCAConceptual(ThreeDScene):
             projection = mean_pos + proj_scalar * pc1
             projections.append(projection)
             
-            proj_line = DashedVMobject(Line3D(point, projection, color=GRAY_A), num_dashes=15, positive_space_ratio=0.4)
-            proj_lines.add(proj_line)
+            # Only create line if points are sufficiently different
+            if np.linalg.norm(point - projection) > 1e-10:
+                proj_line = Line3D(point, projection, color=GRAY_A)
+                proj_line.set_stroke(opacity=0.7)
+                proj_lines.add(proj_line)
             
             proj_dot = Dot3D(projection, radius=0.05, color=YELLOW)
             proj_dots.add(proj_dot)
         
-        self.play(*[Create(line) for line in proj_lines], run_time=2)
-        self.play(*[Create(dot) for dot in proj_dots], run_time=1)
+        if len(proj_lines) > 0:
+            self.play(*[Create(line) for line in proj_lines], run_time=2)
+        if len(proj_dots) > 0:
+            self.play(*[Create(dot) for dot in proj_dots], run_time=1)
         
         self.wait(1)
         
         # Focus on the 1D result
-        self.play(
-            *[FadeOut(dot) for dot in point_cloud],
-            *[FadeOut(line) for line in proj_lines],
-            FadeOut(axes),
-            self.camera.frame.animate.set(zoom=2),
-            run_time=2
-        )
+        fade_animations = []
+        if len(point_cloud) > 0:
+            fade_animations.extend([FadeOut(dot) for dot in point_cloud])
+        if len(proj_lines) > 0:
+            fade_animations.extend([FadeOut(line) for line in proj_lines])
+        fade_animations.extend([FadeOut(axes)])
+        
+        self.play(*fade_animations, run_time=2)
+        self.move_camera(zoom=2, run_time=0)
         
         self.wait(3)
 
