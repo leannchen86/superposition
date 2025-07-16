@@ -59,8 +59,8 @@ class SuperpositionAnimation(Scene):
         
         # Generate loss data (decreasing with noise)
         steps = np.linspace(0, 50, 100)
-        base_loss = 0.22 * np.exp(-steps/15) + 0.13
-        noise = 0.005 * np.sin(steps * 0.8) * np.exp(-steps/20)
+        base_loss = 0.09 * np.exp(-steps/15) + 0.13
+        noise = 0.02 * np.sin(steps * 0.8) * np.exp(-steps/20)
         loss_values = base_loss + noise
         
         # Create initial feature vectors (random angles)
@@ -90,26 +90,37 @@ class SuperpositionAnimation(Scene):
         # Animation parameters
         total_time = 8
         num_points = len(steps)
+
+        # Create the animated line using UpdateFromAlphaFunc
+        animated_line = VMobject()
         
-        def update_loss_curve(mob, alpha):
-            # Clear the curve
+        def update_line(mob, alpha):
+            # Clear the mobject
             mob.clear_points()
+
+            # Convert data points to axes coordinates
+            points = [loss_axes.coords_to_point(steps[i], loss_values[i]) for i in range(len(steps))]
             
-            # Calculate how many points to show
-            points_to_show = int(alpha * num_points)
-            if points_to_show < 2:
-                return
+            # Calculate how many points to show based on alpha
+            num_points = int(alpha * len(points))
             
-            # Create the curve up to current point
-            current_steps = steps[:points_to_show]
-            current_losses = loss_values[:points_to_show]
-            
-            # Convert to axes coordinates
-            points = [loss_axes.coords_to_point(s, l) for s, l in zip(current_steps, current_losses)]
-            
-            # Create the curve
-            if len(points) > 1:
-                mob.set_points_smoothly(points)
+            if num_points >= 2:
+                # Create line segments connecting points with sharp corners
+                current_points = points[:num_points]
+                
+                # Start with the first point
+                mob.start_new_path(current_points[0])
+                
+                # Add line segments to each subsequent point
+                for i in range(1, len(current_points)):
+                    mob.add_line_to(current_points[i])
+                
+                # Set stroke properties for sharp corners
+                mob.set_stroke(RED, width=3)
+                mob.set_fill(opacity=0)
+
+        # Apply the update function
+        animated_line.add_updater(lambda mob, dt: None)  # Dummy updater to make it animatable
         
         def update_feature_vectors(mob, alpha):
             current_step = int(alpha * 50)
@@ -140,7 +151,8 @@ class SuperpositionAnimation(Scene):
         
         # Run the animation
         self.play(
-            UpdateFromAlphaFunc(loss_curve, update_loss_curve),
+            UpdateFromAlphaFunc(animated_line, update_line),
+            # UpdateFromAlphaFunc(loss_curve, update_loss_curve),
             UpdateFromAlphaFunc(feature_vectors, update_feature_vectors),
             run_time=total_time,
             rate_func=smooth
