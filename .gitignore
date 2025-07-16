@@ -1,0 +1,29 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Media files and folders
+code/media/
+media/
+
+# macOS files
+.DS_Store
+.DS_Store?
+._*
+
+# Video files
+*.mp4
+*.avi
+*.mov
+
+# Image files (if you want to exclude all images)
+# *.png
+# *.jpg
+# *.jpeg
+# *.gif
+# *.svg
+
+# Other temporary files
+*.tmp
+*.temp 

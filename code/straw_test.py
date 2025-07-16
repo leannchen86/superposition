@@ -78,7 +78,7 @@ class StrawBox3D(ThreeDScene):
                 straw = Cylinder(
                     radius=straw_radius,
                     height=straw_length,
-                    direction=Z_AXIS,  # Along Z-axis (horizontal)
+                    direction=X_AXIS,  # Along X-axis (horizontal)
                     color=np.random.choice(straw_colors),
                     fill_opacity=1,
                     stroke_width=0
@@ -86,23 +86,6 @@ class StrawBox3D(ThreeDScene):
                 
                 # Position the straw
                 straw.move_to([x, y, z])
-                
-                # Add white stripes to some straws
-                if np.random.random() > 0.5:
-                    for i in range(3):
-                        stripe_z = (i - 1) * straw_length * 0.3
-                        stripe = Cylinder(
-                            radius=straw_radius * 1.05,
-                            height=straw_length * 0.15,
-                            direction=Z_AXIS,
-                            color=WHITE,
-                            fill_opacity=1,
-                            stroke_width=0
-                        )
-                        stripe.move_to([x, y, stripe_z])
-                        straws.add(stripe)
-                
-                straws.add(straw)
         
         # Add all straws to the scene
         self.add(straws)
