@@ -1,0 +1,8 @@
+# This file is used internally by FFMPEG.
+file 'file:/Users/leannchen/Desktop/superposition/code/media/videos/cos_claude/480p15/partial_movie_files/VectorCosineAnimation/1185818338_3267540981_223132457.mp4'
+file 'file:/Users/leannchen/Desktop/superposition/code/media/videos/cos_claude/480p15/partial_movie_files/VectorCosineAnimation/624642324_2048602895_926810689.mp4'
+file 'file:/Users/leannchen/Desktop/superposition/code/media/videos/cos_claude/480p15/partial_movie_files/VectorCosineAnimation/624642324_3174441515_926810689.mp4'
+file 'file:/Users/leannchen/Desktop/superposition/code/media/videos/cos_claude/480p15/partial_movie_files/VectorCosineAnimation/624642324_2775664244_926810689.mp4'
+file 'file:/Users/leannchen/Desktop/superposition/code/media/videos/cos_claude/480p15/partial_movie_files/VectorCosineAnimation/624642324_3352422811_926810689.mp4'
+file 'file:/Users/leannchen/Desktop/superposition/code/media/videos/cos_claude/480p15/partial_movie_files/VectorCosineAnimation/624642324_1911130281_926810689.mp4'
+file 'file:/Users/leannchen/Desktop/superposition/code/media/videos/cos_claude/480p15/partial_movie_files/VectorCosineAnimation/624642324_3881989672_3405912534.mp4'

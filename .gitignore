@@ -1,4 +1,33 @@
-.DS_Store
+# Python cache files
 __pycache__/
-env/
+*.py[cod]
+*$py.class
+
+# Media files and folders
+code/media/
+media/
 /media
+
+# macOS files
+.DS_Store
+.DS_Store?
+._*
+
+# Environment
+env/
+
+# Video files
+*.mp4
+*.avi
+*.mov
+
+# Image files (if you want to exclude all images)
+# *.png
+# *.jpg
+# *.jpeg
+# *.gif
+# *.svg
+
+# Other temporary files
+*.tmp
+*.temp
