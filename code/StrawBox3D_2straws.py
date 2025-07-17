@@ -61,8 +61,8 @@ class StrawBox3D(ThreeDScene):
         # Create straws
         straws = VGroup()
         
-        for layer in range(straws_per_layer):
-            for row in range(straws_per_row):
+        for layer in range(0,2):
+            for row in range(0,2):
                 # Alternate offset for each layer (brick pattern)
                 offset = (layer % 2) * straw_radius * 1.5
                 
@@ -86,6 +86,8 @@ class StrawBox3D(ThreeDScene):
                 
                 # Position the straw
                 straw.move_to([x, y, z])
+                # Add the straw to the straws group
+                straws.add(straw)
         
         # Add all straws to the scene
         self.add(straws)
