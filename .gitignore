@@ -31,3 +31,4 @@ env/
 # Other temporary files
 *.tmp
 *.temp
+.DS_Store
