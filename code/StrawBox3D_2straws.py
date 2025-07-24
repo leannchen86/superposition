@@ -61,6 +61,7 @@ class StrawBox3D(ThreeDScene):
         # Create straws
         straws = VGroup()
         
+        # Create straws in a 2x2 grid
         for layer in range(0,2):
             for row in range(0,2):
                 # Alternate offset for each layer (brick pattern)
