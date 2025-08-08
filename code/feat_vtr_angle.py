@@ -6,14 +6,9 @@ class SuperpositionAnimation(Scene):
         # Set up the scene layout
         left_center = LEFT * 3.5
         right_center = RIGHT * 3.5
-        
-        # Title
-        title = Text("Toy Models of Superposition: Feature Learning", font_size=24)
-        title.to_edge(UP)
-        self.add(title)
-        
+
         # Left side: Loss chart
-        loss_title = Text("Reconstruction Loss", font_size=20)
+        loss_title = Tex(r"Reconstruction Loss", font_size=20)
         loss_title.move_to(left_center + UP * 2.5)
         
         # Create axes for loss plot
@@ -36,13 +31,13 @@ class SuperpositionAnimation(Scene):
         loss_axes.move_to(left_center + DOWN * 0.5)
         
         # Labels for loss plot
-        loss_x_label = Text("Training Step", font_size=14)
+        loss_x_label = Tex("Training Step", font_size=14)
         loss_x_label.next_to(loss_axes, DOWN)
-        loss_y_label = Text("Loss", font_size=14)
+        loss_y_label = Tex("Loss", font_size=14)
         loss_y_label.next_to(loss_axes, LEFT).rotate(PI/2)
         
         # Right side: Feature vectors
-        feature_title = Text("Feature Vector Angles", font_size=20)
+        feature_title = Tex(r"Feature Vector Angles", font_size=20)
         feature_title.move_to(right_center + UP * 2.5)
         
         # Create circle for feature vectors
@@ -50,7 +45,7 @@ class SuperpositionAnimation(Scene):
         feature_circle.move_to(right_center)
         
         # Step counter
-        step_text = Text("Step: 0", font_size=16)
+        step_text = Tex(r"Step: 0", font_size=16)
         step_text.move_to(right_center + DOWN * 2.5)
         
         # Add static elements
@@ -124,7 +119,7 @@ class SuperpositionAnimation(Scene):
         
         def update_feature_vectors(mob, alpha):
             current_step = int(alpha * 50)
-            step_text.become(Text(f"Step: {current_step}", font_size=16))
+            step_text.become(Tex(f"Step: {current_step}", font_size=16))
             step_text.move_to(right_center + DOWN * 2.5)
             
             for i, vector in enumerate(mob):
@@ -162,10 +157,10 @@ class SuperpositionAnimation(Scene):
         self.wait(2)
         
         # Add final annotations
-        final_loss_text = Text(f"Final Loss: {loss_values[-1]:.3f}", font_size=14)
+        final_loss_text = Tex(f"Final Loss: {loss_values[-1]:.3f}", font_size=14)
         final_loss_text.move_to(left_center + DOWN * 2.5)
         
-        angle_text = Text("Evenly Spaced\n(72° apart)", font_size=14)
+        angle_text = Tex("Evenly Spaced\n(72° apart)", font_size=14)
         angle_text.move_to(right_center + DOWN * 2)
         
         self.play(
