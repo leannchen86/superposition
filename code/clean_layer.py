@@ -21,6 +21,29 @@ class NeuralNetworkVisualization(Scene):
         layers = VGroup(*[network[i] for i in range(num_layers)])
         connections = VGroup(*[network[i] for i in range(num_layers, len(network))])
         
+        # Create MathTex labels and arrows for hidden layers
+        hidden_layer_indices = [1, 2, 3]  # indices of hidden layers (excluding input & output)
+        label_numbers = ["786", "2048", "256"]
+        label_groups = VGroup()
+        for idx, layer_idx in enumerate(hidden_layer_indices):
+            layer = layers[layer_idx]
+            # Calculate arrow start/end so it is short and points down to the layer
+            arrow_end = layer.get_top() + UP * 0.05
+            arrow_start = arrow_end + UP * 0.3  # short arrow length (~0.25-0.3)
+            arrow = Arrow(
+                arrow_start,
+                arrow_end,
+                buff=0,
+                color=BLUE,
+                stroke_width=1.5,
+            )
+            label = MathTex(label_numbers[idx], color=BLUE).scale(0.6)
+            label.next_to(arrow, UP, buff=0.05)
+            group = VGroup(label, arrow).set_opacity(0)  # start invisible
+            label_groups.add(group)
+        # Add the label groups to the scene so we can animate their opacity later
+        self.add(label_groups)
+        
         # Animate through each layer
         for i in range(num_layers):
             # Create animations list
@@ -42,12 +65,18 @@ class NeuralNetworkVisualization(Scene):
                                 node.animate.set_fill(opacity=0.9).set_stroke(opacity=1, width=2)
                             )
 
-            # Dim connections - highlight those connected to current layer
-            for j, conn_group in enumerate(connections):
-                if j == i:  # Only connections going out of the current layer (to the right)
-                    animations.append(conn_group.animate.set_stroke(opacity=0.6, width=1.5))
-                else:  # Other connections
-                    animations.append(conn_group.animate.set_stroke(opacity=0.1, width=0.5))
+            # Show or hide the label corresponding to this layer
+            for idx, layer_idx in enumerate(hidden_layer_indices):
+                target_opacity = 1 if i == layer_idx else 0
+                animations.append(label_groups[idx].animate.set_opacity(target_opacity))
+
+            # Keep connections unchanged while iterating through layers
+            # (previously we animated their opacity based on the current layer)
+            # for j, conn_group in enumerate(connections):
+            #     if j == i:
+            #         animations.append(conn_group.animate.set_stroke(opacity=0.6, width=1.5))
+            #     else:
+            #         animations.append(conn_group.animate.set_stroke(opacity=0.1, width=0.5))
             
             # Play all animations together
             self.play(*animations, run_time=0.5)
@@ -73,6 +102,10 @@ class NeuralNetworkVisualization(Scene):
             reset_animations.append(
                 conn_group.animate.set_stroke(opacity=0.4, width=0.7)
             )
+        
+        # Hide all labels at the end
+        for group in label_groups:
+            reset_animations.append(group.animate.set_opacity(0))
         
         self.play(*reset_animations, run_time=0.5)
         self.wait(0.5)

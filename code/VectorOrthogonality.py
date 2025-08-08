@@ -1,7 +1,7 @@
 from manim import *
 import numpy as np
 
-class VectorOrthogonality(Scene):
+class VectorOrthogonality(MovingCameraScene):
     def construct(self):
         # Setup the 2D coordinate system
         axes = Axes(
@@ -32,6 +32,9 @@ class VectorOrthogonality(Scene):
                 stroke_width=4,
             )
         
+        def get_angle_arc(vec1, vec2):
+            return Angle(vec1, vec2, radius=0.5, other_angle=False)
+        
         # Step 1: Show 2 orthogonal vectors
         vec1 = Arrow(ORIGIN, 2*RIGHT, color=colors[0], buff=0)
         vec2 = Arrow(ORIGIN, 2*UP, color=colors[1], buff=0)
@@ -40,7 +43,7 @@ class VectorOrthogonality(Scene):
         self.wait(0.5)
         
         # Show angle between vectors
-        angle_arc = Angle(vec1, vec2, radius=0.5, other_angle=False)
+        angle_arc = get_angle_arc(vec1, vec2)
         angle_label = MathTex("90°").next_to(angle_arc, UR, buff=0.1)
         
         self.play(Create(angle_arc), Write(angle_label))
@@ -80,13 +83,14 @@ class VectorOrthogonality(Scene):
         )
         
         # Show 120° label
-        angle_text = MathTex("120°\\text{ apart}").shift(3*UP)
-        self.play(Write(angle_text))
+        angle_arc = get_angle_arc(new_vecs[0], new_vecs[1])
+        angle_label = MathTex("120°").next_to(angle_arc, UR, buff=0.1)
+        self.play(Create(angle_arc), Write(angle_label))
         self.wait(1.5)
-        self.play(FadeOut(angle_text))
+        self.play(FadeOut(angle_arc), FadeOut(angle_label))
         
         # Step 3: Add fourth vector and rotate all vectors to be 90° apart
-        vec4 = get_vector(135, colors[3])
+        vec4 = get_vector(270, colors[3])
         self.play(GrowFromPoint(vec4, ORIGIN))
 
         target_angles_4 = [0, 90, 180, 270]  # Desired final angles (degrees)
@@ -94,19 +98,20 @@ class VectorOrthogonality(Scene):
             Rotate(vec1, angle=np.deg2rad(target_angles_4[0] - 0), about_point=ORIGIN),
             Rotate(vec2, angle=np.deg2rad(target_angles_4[1] - 120), about_point=ORIGIN),
             Rotate(vec3, angle=np.deg2rad(target_angles_4[2] - 240), about_point=ORIGIN),
-            Rotate(vec4, angle=np.deg2rad(target_angles_4[3] - 135), about_point=ORIGIN),
+            Rotate(vec4, angle=np.deg2rad(target_angles_4[3] - 270), about_point=ORIGIN),
         ]
         self.play(*rotations_4)
         self.wait(1)
         
         # Show 90° label
-        angle_text = MathTex("90°\\text{ apart}").shift(3*UP)
-        self.play(Write(angle_text))
+        angle_arc = get_angle_arc(vec1, vec2)
+        angle_label = MathTex("90°").next_to(angle_arc, UR, buff=0.1)
+        self.play(Create(angle_arc), Write(angle_label))
         self.wait(1.5)
-        self.play(FadeOut(angle_text))
+        self.play(FadeOut(angle_arc), FadeOut(angle_label))
         
         # Step 4: Add fifth vector and rotate all vectors to be 72° apart
-        vec5 = get_vector(225, colors[4])
+        vec5 = get_vector(300, colors[4])
         self.play(GrowFromPoint(vec5, ORIGIN))
 
         target_angles_5 = [0, 72, 144, 216, 288]  # Desired final angles (degrees)
@@ -115,7 +120,7 @@ class VectorOrthogonality(Scene):
             Rotate(vec2, angle=np.deg2rad(target_angles_5[1] - 90), about_point=ORIGIN),
             Rotate(vec3, angle=np.deg2rad(target_angles_5[2] - 180), about_point=ORIGIN),
             Rotate(vec4, angle=np.deg2rad(target_angles_5[3] - 270), about_point=ORIGIN),
-            Rotate(vec5, angle=np.deg2rad(target_angles_5[4] - 225), about_point=ORIGIN),
+            Rotate(vec5, angle=np.deg2rad(target_angles_5[4] - 300), about_point=ORIGIN),
         ]
         self.play(*rotations_5)
         self.wait(2)
@@ -123,9 +128,12 @@ class VectorOrthogonality(Scene):
         existing_vecs = [vec1, vec2, vec3, vec4, vec5]
         
         # Show 72° label and final message
-        angle_text = MathTex("72°\\text{ apart}").shift(3*UP)
-        self.play(Write(angle_text))
+        # Use the updated list of five vectors to show the 72° separation
+        angle_arc = get_angle_arc(existing_vecs[0], existing_vecs[1])
+        angle_label = MathTex("72°").next_to(angle_arc, UR, buff=0.1)
+        self.play(Create(angle_arc), Write(angle_label))
         self.wait(1)
+        self.play(FadeOut(angle_arc), FadeOut(angle_label))
         
         # Final message about interference
         interference_text = Text(
@@ -157,18 +165,28 @@ class VectorOrthogonality(Scene):
         proj_point = 2 * proj_scalar * vec_a_dir  # Scale by vector length
         
         # Create projection visualization
-        proj_dot = Dot(proj_point, color=ORANGE, radius=0.1)
         proj_line = DashedLine(
             start=2*vec_b_dir, 
             end=proj_point,
-            color=ORANGE,
+            color=WHITE,
             stroke_width=3,
             dash_length=0.2
         )
+
+        #create a solid orange line from the origin of vec_b to the end of the projection on the x-axis
+        proj_line_solid = Line(
+            start=ORIGIN,
+            end=proj_point,
+            color=WHITE,
+            stroke_width=5
+        )
+
         
         # Show projection
+        #zoom the camera in on the projection
+        self.play(self.camera.frame.animate.scale(0.5).move_to(proj_point))
         self.play(Create(proj_line))
-        self.play(FadeIn(proj_dot))
+        self.play(Create(proj_line_solid))
         self.wait(0.5)
         
         # Add projection label
@@ -179,20 +197,3 @@ class VectorOrthogonality(Scene):
         ).shift(2.5*LEFT + 1*UP)
         self.play(Write(proj_text))
         self.wait(1.5)
-        
-        # Show interference visualization with overlapping regions
-        overlap_region = Circle(
-            radius=0.3,
-            color=YELLOW,
-            fill_opacity=0.3,
-            stroke_width=2
-        ).move_to(proj_point)
-        
-        interference_label = Text(
-            "Interference!", 
-            font_size=18,
-            color=YELLOW
-        ).next_to(overlap_region, DOWN)
-        
-        self.play(FadeIn(overlap_region), Write(interference_label))
-        self.wait(2)
