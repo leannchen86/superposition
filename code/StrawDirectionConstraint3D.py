@@ -6,13 +6,11 @@ class StrawDirectionConstraint3D(ThreeDScene):
         # Set up 3D camera
         self.set_camera_orientation(phi=60 * DEGREES, theta=-45 * DEGREES)
         
-        # Create a 3D box
-        box = Cube(side_length=4, fill_opacity=0.1, stroke_width=2)
-        box.set_color(GRAY)
         
         # Phase 1: Show parallel straws (NOT ALLOWED)
         # Create multiple straws with same directions
-        parallel_straws = VGroup()
+        horizontal_parallel_straws = VGroup()
+        diagonal_parallel_straws = VGroup()
         
         # Group 1: Horizontal parallel straws
         for i in range(3):
@@ -20,12 +18,12 @@ class StrawDirectionConstraint3D(ThreeDScene):
                 radius=0.08,
                 height=3,
                 direction=RIGHT,
-                fill_color=RED,
-                fill_opacity=0.8,
-                stroke_width=0
             )
+            straw.set_color(RED)
+            straw.set_fill(RED, opacity=0.8)
+            straw.set_style(fill_color=RED, stroke_color=RED)
             straw.shift(UP * (i - 1) * 0.5 + LEFT * 0.5)
-            parallel_straws.add(straw)
+            horizontal_parallel_straws.add(straw)
         
         # Group 2: Diagonal parallel straws
         for i in range(2):
@@ -33,44 +31,34 @@ class StrawDirectionConstraint3D(ThreeDScene):
                 radius=0.08,
                 height=2.5,
                 direction=normalize(RIGHT + UP + OUT * 0.5),
-                fill_color=RED,
-                fill_opacity=0.8,
-                stroke_width=0
             )
+            straw.set_color(RED)
+            straw.set_fill(RED, opacity=0.8)
+            straw.set_style(fill_color=RED, stroke_color=RED)
             straw.shift(DOWN * 0.5 + RIGHT * (i - 0.5) * 0.8)
-            parallel_straws.add(straw)
+            diagonal_parallel_straws.add(straw)
         
-        # "Not Allowed" label
-        not_allowed_text = Text("NOT ALLOWED", font_size=24, color=RED)
-        not_allowed_text.to_corner(UL)
-        
-        # Add elements to scene
-        self.play(Create(box))
-        self.wait(0.5)
-        self.play(
-            FadeIn(parallel_straws),
-            Write(not_allowed_text)
+        # Create two initial demonstration straws (blue), one from each group's orientation
+        initial_horizontal_straw = Cylinder(
+            radius=0.08,
+            height=3,
+            direction=RIGHT,
+            fill_color=None,
+            fill_opacity=0.9,
+            stroke_width=0,
         )
-        
-        # Highlight the parallel nature with flashing
-        self.play(
-            parallel_straws.animate.set_fill(RED_E),
-            rate_func=there_and_back,
-            run_time=0.5
+        initial_diagonal_straw = Cylinder(
+            radius=0.08,
+            height=2.5,
+            direction=normalize(RIGHT + UP + OUT * 0.5),
+            fill_color=None,
+            fill_opacity=0.9,
+            stroke_width=0,
         )
-        self.play(
-            parallel_straws.animate.set_fill(RED),
-            rate_func=there_and_back,
-            run_time=0.5
-        )
-        
-        # Rotate camera to show the parallel nature better
-        self.begin_ambient_camera_rotation(rate=0.2)
-        self.wait(3)
-        self.stop_ambient_camera_rotation()
-        
+
+
         # Phase 2: Transform to unique directions (ALLOWED)
-        unique_straws = VGroup()
+        allowed_unique_straws = VGroup()
         
         # Define unique directions for each straw
         directions = [
@@ -81,19 +69,18 @@ class StrawDirectionConstraint3D(ThreeDScene):
             normalize(RIGHT * 0.7 + DOWN * 0.3 + IN * 0.4)
         ]
         
-        colors = [BLUE, GREEN, ORANGE, PURPLE, TEAL]
-        
         # Create straws with unique directions
-        for i, (direction, color) in enumerate(zip(directions, colors)):
+        for i, direction in enumerate(directions):
             straw = Cylinder(
                 radius=0.08,
                 height=2.5 + i * 0.2,
                 direction=direction,
-                fill_color=color,
+                fill_color=None,
                 fill_opacity=0.8,
-                stroke_width=0
+                stroke_width=0,
+                stroke_color=BLUE,
             )
-            # Position them in different parts of the box
+            # Position them in different parts of space
             if i == 0:
                 straw.shift(UP * 0.5 + LEFT * 0.3)
             elif i == 1:
@@ -105,46 +92,43 @@ class StrawDirectionConstraint3D(ThreeDScene):
             else:
                 straw.shift(RIGHT * 0.3 + OUT * 0.2)
             
-            unique_straws.add(straw)
+            allowed_unique_straws.add(straw)
         
-        # "Allowed" label
-        allowed_text = Text("ALLOWED", font_size=24, color=GREEN)
-        allowed_text.to_corner(UL)
+        # Animation sequence - all self.play calls at the end
+        # Scale all straws by 1.8 to match initial straw scaling
+        initial_horizontal_straw.scale(1.8)
+        initial_diagonal_straw.scale(1.8)
+        horizontal_parallel_straws.scale(1.8)
+        diagonal_parallel_straws.scale(1.8)
+        allowed_unique_straws.scale(1.8)
         
-        # Smooth transition
+        self.play(FadeIn(VGroup(initial_horizontal_straw, initial_diagonal_straw)), run_time=1)
+        self.wait(0.3)
+
         self.play(
-            FadeOut(not_allowed_text),
-            Transform(parallel_straws, unique_straws),
-            run_time=2
-        )
-        self.play(Write(allowed_text))
+            ReplacementTransform(VGroup(initial_horizontal_straw, initial_diagonal_straw), allowed_unique_straws),
+            run_time=1,
+            )
         
-        # Show the unique directions by rotating
-        self.begin_ambient_camera_rotation(rate=0.3)
-        self.wait(4)
+        self.wait(2.5)
         
-        # Highlight crossing points
-        # Add small spheres where straws cross/touch
-        cross_points = VGroup()
-        for _ in range(3):
-            point = Sphere(radius=0.1, color=YELLOW, fill_opacity=0.8)
-            # Place at some intersection points
-            point.move_to([
-                np.random.uniform(-1, 1),
-                np.random.uniform(-1, 1),
-                np.random.uniform(-0.5, 0.5)
-            ])
-            cross_points.add(point)
-        
-        self.play(FadeIn(cross_points))
+        # Fade out the transformed initial straws (now matching allowed_unique_straws)
+        self.play(FadeOut(allowed_unique_straws), run_time=0.5)
+
+        # Bring in horizontal parallel straws (not allowed)
+        self.play(FadeIn(horizontal_parallel_straws), run_time=0.1)
+
         self.wait(2)
-        
-        # Final camera movement
-        self.move_camera(phi=75 * DEGREES, theta=-30 * DEGREES, run_time=2)
+
+        self.play(FadeOut(horizontal_parallel_straws), run_time=0.1)
+
+        # Bring in diagonal parallel straws (not allowed)
+        self.play(FadeIn(diagonal_parallel_straws), run_time=0.1)
+
         self.wait(2)
         
         # Fade out
         self.play(
-            FadeOut(VGroup(box, parallel_straws, allowed_text, cross_points)),
-            run_time=1
+            FadeOut(diagonal_parallel_straws),
+            run_time=0.1
         )

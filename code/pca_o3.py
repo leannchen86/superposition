@@ -25,10 +25,9 @@ class PCAIntro(ThreeDScene):
         # 1) Generate and show the synthetic 3-D data cloud
         rng = np.random.default_rng(42)
         data = rng.multivariate_normal(self.MEAN, self.COV, self.N_POINTS)
-
         # Set an initial 3-D camera orientation for better depth perception
-        self.set_camera_orientation(phi=70 * DEGREES, theta=30 * DEGREES)
-
+        start_distance = 9.0
+        self.set_camera_orientation(phi=70 * DEGREES, theta=30 * DEGREES, distance=start_distance)
         axes = ThreeDAxes(
             x_range=[-6, 6, 1],
             y_range=[-6, 6, 1],
@@ -42,32 +41,27 @@ class PCAIntro(ThreeDScene):
             Dot3D(point=[x, y, z], radius=self.DOT_RADIUS, color=BLUE)
             for x, y, z in data
         ])
-
-        self.play(Create(axes))
-        self.play(LaggedStart(*[FadeIn(dot) for dot in dots], lag_ratio=0.02))
         self.wait(0.5)
-
         # 2) Compute principal components (eigenvectors of covariance)
         cov_mat = np.cov(data.T)
         eigvals, eigvecs = np.linalg.eigh(cov_mat)  # eigh guarantees sorted eigenvalues for symmetric matrices
-        
         # Check if we have valid eigenvalues and eigenvectors
         if eigvals.size == 0 or eigvecs.size == 0:
             raise ValueError("Eigenvalue decomposition failed - got empty arrays")
-        
         if eigvecs.shape[1] < 2:
             raise ValueError(f"Expected at least 2 eigenvectors, got {eigvecs.shape[1]}")
-        
         # Sort in descending variance order
         order = eigvals.argsort()[::-1]
         eigvals = eigvals[order]
         eigvecs = eigvecs[:, order]
-        
         # Extract principal components more safely
         pc1 = eigvecs[:, 0]  # First principal component
         pc2 = eigvecs[:, 1]  # Second principal component
-
         # Helper to turn 2‑D vector → Manim 3‑D point
+
+        # Animation sequence - all self.play calls at the end
+        self.play(Create(axes))
+        self.play(LaggedStart(*[FadeIn(dot) for dot in dots], lag_ratio=0.02))
         def v(*xy):
             x, y = xy
             return np.array([x, y, 0])
@@ -113,9 +107,8 @@ class PCAIntro(ThreeDScene):
         self.play(Transform(arrow_pc1, axis_line))
 
         # --- Camera motion to highlight the collapsed 1-D subspace (inspired by the 3-D animation) ---
-        frame = self.camera.frame
-        # Zoom in and center on the principal component axis
-        self.play(frame.animate.scale(0.7).move_to(axis_line.get_center()), run_time=2)
+        # Zoom in and center on the principal component axis (use move_camera for 3D)
+        self.move_camera(distance=start_distance * 0.7, frame_center=axis_line.get_center(), run_time=2)
         self.wait(0.3)
 
         # 7) Title showing dimensionality reduction
@@ -125,7 +118,7 @@ class PCAIntro(ThreeDScene):
         self.wait(2)
 
         # Final subtle rotation to echo the cinematic sweep
-        self.play(frame.animate.rotate(PI/12, about_point=axis_line.get_center()), run_time=2)
+        self.move_camera(theta=30 * DEGREES + PI/12, frame_center=axis_line.get_center(), run_time=2)
         self.wait(1)
 
         # Hold final frame

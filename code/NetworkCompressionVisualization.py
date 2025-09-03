@@ -4,75 +4,44 @@ import random
 
 class NetworkCompressionVisualization(Scene):
     def construct(self):
-        # Create title
-        title = Text("Neural Network Compression Hypothesis", font_size=36).to_edge(UP)
-        subtitle = Text("Dense models as compressed representations of sparse systems", 
-                       font_size=24, color=GRAY).next_to(title, DOWN, buff=0.3)
-        
-        self.play(Write(title), Write(subtitle))
-        self.wait(1)
-        
         # Create the large virtual network (right side)
         large_network = self.create_large_sparse_network()
         large_network.shift(RIGHT * 4)
-        
         # Create the compressed network (left side)
         small_network = self.create_small_dense_network()
         small_network.shift(LEFT * 4)
-        
-        # Add parameter count labels
-        large_label = Text("Virtual Sparse System\n(Conceptual Scale)", 
-                          font_size=20, color=BLUE).next_to(large_network, DOWN, buff=0.5)
-        small_label = Text("600 Billion Parameters\n(Dense Model)", 
-                          font_size=20, color=GREEN).next_to(small_network, DOWN, buff=0.5)
-        
-        # Show the large virtual network first
-        self.play(FadeIn(large_network), Write(large_label))
-        self.wait(1)
-        
-        # Show the small dense network
-        self.play(FadeIn(small_network), Write(small_label))
-        self.wait(1)
-        
-        # Create and show the projector
+        # Create and show the projector (positioned between networks)
         projector = self.create_projector()
-        projector.move_to(ORIGIN + UP * 0.5)
-        
+        projector.move_to(LEFT * 0.8)
         # Create projection beam
         beam = self.create_projection_beam()
-        
-        self.play(FadeIn(projector))
-        self.wait(0.5)
-        
-        # Show projection beam
-        self.play(Create(beam))
-        self.wait(1)
-        
-        # Add compression explanation
-        compression_text = Text("Compression Process", font_size=24, color=YELLOW)
-        compression_text.next_to(projector, UP, buff=0.8)
-        self.play(Write(compression_text))
-        
         # Transform the large network into the small one
-        # Create a copy of the large network for transformation
-        large_network_copy = large_network.copy()
-        
+        # Create a copy of the small network for transformation
+        small_network_copy = small_network.copy()
         # Animate the transformation
+
+        # Animation sequence - all self.play calls at the end
+        self.play(FadeIn(small_network),
+                  FadeIn(projector))
+        self.wait(1)
+                  
         self.play(
-            Transform(large_network_copy, small_network),
-            run_time=3,
+            Create(beam))
+        self.play(
+            Transform(small_network_copy, large_network),
+            run_time=2.5,
             rate_func=smooth
         )
-        
-        self.wait(1)
-        
-        # Add final explanation
-        explanation = Text("The dense model captures the essential patterns\nof the larger sparse system", 
-                          font_size=20, color=WHITE).to_edge(DOWN)
-        self.play(Write(explanation))
-        
-        self.wait(3)
-        
+        self.wait(5)
+
+        self.play(
+            FadeOut(small_network),
+            FadeOut(projector),
+            FadeOut(beam),
+            FadeOut(small_network_copy),
+        )
+        self.wait(2)
+
     def create_large_sparse_network(self):
         """Create a large, sparse-looking virtual network"""
         group = VGroup()
@@ -146,34 +115,69 @@ class NetworkCompressionVisualization(Scene):
         return group
     
     def create_projector(self):
-        """Create a projector visualization"""
-        # Main projector body
-        body = Rectangle(width=1.0, height=0.6, color=GRAY, fill_opacity=0.8)
+        """Create a projector visualization with supporting feet"""
+        # Main projector body - made smaller
+        body = Rectangle(
+            width=1.0,  # Smaller width
+            height=0.5, # Smaller height
+            fill_color=GRAY_D,
+            fill_opacity=0.9,
+            stroke_width=2,
+            stroke_color=WHITE,
+        )
         
-        # Lens
-        lens = Circle(radius=0.15, color=WHITE, fill_opacity=0.9).shift(RIGHT * 0.4)
+        # Add two supporting feet as simple angled lines (45 degrees)
+        left_foot = Line(
+            start=body.get_bottom() + LEFT * 0.4,
+            end=body.get_bottom() + LEFT * 0.4 + DOWN * 0.2,
+            stroke_width=3,
+            stroke_color=WHITE,
+        )
         
-        # Projection symbol
-        projection_lines = VGroup()
-        for i in range(3):
-            angle = (i - 1) * 0.3
-            line = Line(ORIGIN, [0.8 * np.cos(angle), 0.8 * np.sin(angle), 0], 
-                       color=YELLOW, stroke_width=2)
-            line.shift(RIGHT * 0.55)
-            projection_lines.add(line)
+        right_foot = Line(
+            start=body.get_bottom() + RIGHT * 0.4,
+            end=body.get_bottom() + RIGHT * 0.4 + DOWN * 0.2,
+            stroke_width=3,
+            stroke_color=WHITE,
+        )
         
-        projector = VGroup(body, lens, projection_lines)
+        projector = VGroup(body, left_foot, right_foot)
         return projector
     
     def create_projection_beam(self):
-        """Create the projection beam from projector"""
-        # Create a triangular beam
-        beam_points = [
-            [-0.5, 0.1, 0],   # Left top
-            [-0.5, -0.1, 0],  # Left bottom
-            [0.5, -0.3, 0],   # Right bottom
-            [0.5, 0.3, 0],    # Right top
-        ]
+        """Create the projection beam from projector (adapted from 3D version)"""
+        # Create light beam using polygon - less expanding
+        def create_light_beam(start_point, end_point, width_start=0.1, width_end=0.6):  # Reduced expansion
+            # Calculate beam vertices
+            direction = end_point - start_point
+            perpendicular = np.array([-direction[1], direction[0], 0])
+            perpendicular = perpendicular / np.linalg.norm(perpendicular)
+            
+            # Create beam shape
+            vertices = [
+                start_point + perpendicular * width_start / 2,
+                start_point - perpendicular * width_start / 2,
+                end_point - perpendicular * width_end / 2,
+                end_point + perpendicular * width_end / 2
+            ]
+            
+            return Polygon(*vertices, fill_opacity=0.3, fill_color=YELLOW, stroke_width=0)
         
-        beam = Polygon(*beam_points, color=YELLOW, fill_opacity=0.2, stroke_opacity=0.5)
-        return beam
+        # Main light beam - start from right middle of projector (projector is at LEFT * 0.8)
+        # Projector body width is 1.0, so right edge is at x = -0.8 + 0.5 = -0.3
+        beam_start = np.array([-0.3, 0, 0])  # From right middle edge of projector
+        beam_end = np.array([1.2, 0, 0])     # Beam extends to projection area
+        main_beam = create_light_beam(beam_start, beam_end)
+        
+        # Additional light rays for realistic effect
+        light_rays = VGroup()
+        for i in range(5):
+            offset_y = (i - 2) * 0.15
+            ray_start = beam_start + np.array([0, offset_y * 0.3, 0])
+            ray_end = beam_end + np.array([0, offset_y, 0])
+            
+            ray = create_light_beam(ray_start, ray_end, 0.05, 0.4)  # Less expanding rays
+            ray.set_fill(YELLOW, opacity=0.2)
+            light_rays.add(ray)
+        
+        return VGroup(main_beam, light_rays)

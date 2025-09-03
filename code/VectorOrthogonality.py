@@ -12,17 +12,11 @@ class VectorOrthogonality(MovingCameraScene):
             axis_config={"color": GREY},
             tips=False,
         )
-        
         # Add axis labels
         x_label = MathTex("x").next_to(axes.x_axis, RIGHT)
         y_label = MathTex("y").next_to(axes.y_axis, UP)
-        
-        self.play(Create(axes), Write(x_label), Write(y_label))
-        self.wait(0.5)
-        
         # Define colors for vectors
         colors = [RED, BLUE, GREEN, YELLOW, PURPLE]
-
         # Helper to generate a 2-unit vector (arrow) at a given angle in degrees
         def get_vector(angle_deg, color):
             angle_rad = np.deg2rad(angle_deg)
@@ -39,19 +33,18 @@ class VectorOrthogonality(MovingCameraScene):
         vec1 = Arrow(ORIGIN, 2*RIGHT, color=colors[0], buff=0)
         vec2 = Arrow(ORIGIN, 2*UP, color=colors[1], buff=0)
         
-        self.play(GrowArrow(vec1), GrowArrow(vec2))
-        self.wait(0.5)
-        
         # Show angle between vectors
         angle_arc = get_angle_arc(vec1, vec2)
-        angle_label = MathTex("90°").next_to(angle_arc, UR, buff=0.1)
-        
-        self.play(Create(angle_arc), Write(angle_label))
-        self.wait(0.5)
+        angle_label = Tex(r"90°").next_to(angle_arc, UR, buff=0.1)
         
         # Show dot product = 0
-        dot_product_text = MathTex("\\text{dot product} = 0").shift(3*UP)
-        self.play(Write(dot_product_text))
+        dot_product_text = MathTex("\\text{dot product} = 0").shift(3*RIGHT + 2*UP)
+        
+        # Animation sequence - step-by-step demonstration
+        self.play(FadeIn(axes), FadeIn(x_label), FadeIn(y_label))
+        self.play(Create(vec1), Create(vec2), run_time=1.2)
+        self.play(Create(angle_arc), Create(angle_label), run_time=1)
+        self.play(Write(dot_product_text), run_time=1.5)
         self.wait(1.5)
         
         # Remove angle and dot product text for clarity
@@ -84,7 +77,7 @@ class VectorOrthogonality(MovingCameraScene):
         
         # Show 120° label
         angle_arc = get_angle_arc(new_vecs[0], new_vecs[1])
-        angle_label = MathTex("120°").next_to(angle_arc, UR, buff=0.1)
+        angle_label = Tex(r"120°").next_to(angle_arc, UR, buff=0.1)
         self.play(Create(angle_arc), Write(angle_label))
         self.wait(1.5)
         self.play(FadeOut(angle_arc), FadeOut(angle_label))
@@ -105,7 +98,7 @@ class VectorOrthogonality(MovingCameraScene):
         
         # Show 90° label
         angle_arc = get_angle_arc(vec1, vec2)
-        angle_label = MathTex("90°").next_to(angle_arc, UR, buff=0.1)
+        angle_label = Tex(r"90°").next_to(angle_arc, UR, buff=0.1)
         self.play(Create(angle_arc), Write(angle_label))
         self.wait(1.5)
         self.play(FadeOut(angle_arc), FadeOut(angle_label))
@@ -130,18 +123,10 @@ class VectorOrthogonality(MovingCameraScene):
         # Show 72° label and final message
         # Use the updated list of five vectors to show the 72° separation
         angle_arc = get_angle_arc(existing_vecs[0], existing_vecs[1])
-        angle_label = MathTex("72°").next_to(angle_arc, UR, buff=0.1)
+        angle_label = Tex(r"72°").next_to(angle_arc, UR, buff=0.1)
         self.play(Create(angle_arc), Write(angle_label))
         self.wait(1)
         self.play(FadeOut(angle_arc), FadeOut(angle_label))
-        
-        # Final message about interference
-        interference_text = Text(
-            "With 5 vectors in 2D: overlap is inevitable!", 
-            font_size=24
-        ).shift(3.5*DOWN)
-        self.play(Write(interference_text))
-        self.wait(1)
         
         # Show projection effect - demonstrate overlap/interference
         self.show_projection_interference(existing_vecs)
@@ -180,7 +165,6 @@ class VectorOrthogonality(MovingCameraScene):
             color=WHITE,
             stroke_width=5
         )
-
         
         # Show projection
         #zoom the camera in on the projection
@@ -190,10 +174,6 @@ class VectorOrthogonality(MovingCameraScene):
         self.wait(0.5)
         
         # Add projection label
-        proj_text = Text(
-            "Projection causes overlap", 
-            font_size=20,
-            color=ORANGE
-        ).shift(2.5*LEFT + 1*UP)
+        proj_text = Tex(r"Projection causes overlap", font_size=20, color=ORANGE).shift(2.5*RIGHT + 0.8 + 1*UP).set_x(0.5)
         self.play(Write(proj_text))
         self.wait(1.5)

@@ -5,18 +5,13 @@ class NeuralNetworkVisualization(Scene):
     The first layer has fewer nodes and smaller height than other layers."""
 
     def construct(self):
-        
         # Fetch only the network VGroup (layers + connection groups)
         network = self.create_mlp_model()
-        
         # Initial fade in
-        self.play(FadeIn(network), run_time=0.5)
         self.wait(0.5)
-        
         # Extract layers and connections from the network
         layer_sizes = [3, 5, 5, 5, 2]
         num_layers = len(layer_sizes)
-        
         # Separate layers and connections
         layers = VGroup(*[network[i] for i in range(num_layers)])
         connections = VGroup(*[network[i] for i in range(num_layers, len(network))])
@@ -25,7 +20,6 @@ class NeuralNetworkVisualization(Scene):
         for i in range(num_layers):
             # Create animations list
             animations = []
-            
             # Dim all layers and connections first
             for j, layer in enumerate(layers):
                 if j != i:  # Dim other layers
@@ -34,14 +28,12 @@ class NeuralNetworkVisualization(Scene):
                             animations.append(
                                 node.animate.set_fill(opacity=0.1).set_stroke(opacity=0.3)
                             )
-
                 else:  # Highlight current layer
                     for node in layer:
                         if isinstance(node, (Circle, VGroup)):
                             animations.append(
                                 node.animate.set_fill(opacity=0.9).set_stroke(opacity=1, width=2)
                             )
-
             # Dim connections - highlight those connected to current layer
             for j, conn_group in enumerate(connections):
                 if j == i:  # Only connections going out of the current layer (to the right)
@@ -50,12 +42,40 @@ class NeuralNetworkVisualization(Scene):
                     animations.append(conn_group.animate.set_stroke(opacity=0.1, width=0.5))
             
             # Play all animations together
-            self.play(*animations, run_time=0.5)
-            self.wait(0.1)
+            self.play(*animations, run_time=1)
+            self.wait(0.5)
         
+        # Backpropagation animation - flow backwards through the network
+        for i in range(num_layers - 1, -1, -1):  # Iterate backwards from output to input
+            # Create animations list
+            animations = []
+            # Dim all layers and connections first
+            for j, layer in enumerate(layers):
+                if j != i:  # Dim other layers
+                    for node in layer:
+                        if isinstance(node, (Circle, VGroup)):
+                            animations.append(
+                                node.animate.set_fill(opacity=0.1).set_stroke(opacity=0.3)
+                            )
+                else:  # Highlight current layer
+                    for node in layer:
+                        if isinstance(node, (Circle, VGroup)):
+                            animations.append(
+                                node.animate.set_fill(opacity=0.9).set_stroke(opacity=1, width=2)
+                            )
+            # For backprop, highlight connections coming INTO the current layer
+            for j, conn_group in enumerate(connections):
+                if j == i - 1 and i > 0:  # Connections coming into the current layer (from the left)
+                    animations.append(conn_group.animate.set_stroke(opacity=0.6, width=1.5))
+                else:  # Other connections
+                    animations.append(conn_group.animate.set_stroke(opacity=0.1, width=0.5))
+            
+            # Play all animations together
+            self.play(*animations, run_time=1)
+            self.wait(0.5)
+
         # Reset to normal at the end
         reset_animations = []
-        
         # Reset all layers
         for i, layer in enumerate(layers):
             for node in layer:
@@ -67,15 +87,16 @@ class NeuralNetworkVisualization(Scene):
                     reset_animations.append(
                         node.animate.set_fill(opacity=0.9).set_stroke(opacity=1, width=2)
                     )
-        
         # Reset all connections
         for conn_group in connections:
             reset_animations.append(
                 conn_group.animate.set_stroke(opacity=0.4, width=0.7)
             )
-        
-        self.play(*reset_animations, run_time=0.5)
-        self.wait(0.5)
+
+        # Animation sequence - all self.play calls at the end
+        self.play(Create(network), run_time=2)
+        self.wait(2)
+        self.play(*reset_animations, run_time=1.5)
 
     def create_mlp_model(self, color=BLUE):
         """Create neural network with proper structure and ellipsis support"""
