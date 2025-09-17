@@ -58,6 +58,35 @@ class MLPZoomNetwork(Scene):
             t.set_x(left_layer[idx].get_left()[0] - label_gap - t.get_width()/2)
             t.set_y(left_layer[idx].get_y())
             side_nums.add(t)
+        
+        # Create arrows and labels for the input neurons
+        arrow_gap = 0.8
+        arrows = VGroup()
+        feature_labels = VGroup()
+        feature_names = ["furry", "loyal", "golden"]  # bottom, middle, top
+
+        # Position arrows based on the actual left edge of the number glyphs
+        for num_label, feature_name in zip(side_nums, feature_names):
+            left_x = num_label.get_left()[0]
+            y_pos = num_label.get_y()
+
+            # Arrow points left, starting just to the left of the number
+            arrow_start = [left_x - 0.12, y_pos, 0]
+            arrow_end = [left_x - (0.12 + arrow_gap), y_pos, 0]
+            feature_arrow = Arrow(start=arrow_start, end=arrow_end, buff=0, color=WHITE, stroke_width=1.5)
+            arrows.add(feature_arrow)
+
+            # Keep arrows glued to the numbers during transforms
+            feature_arrow.add_updater(lambda m, n=num_label: m.put_start_and_end_on(
+                [n.get_left()[0] - 0.12, n.get_y(), 0],
+                [n.get_left()[0] - (0.12 + arrow_gap), n.get_y(), 0]
+            ))
+
+            # Feature label to the left of arrow end (and keep it following the arrow)
+            label = Tex(feature_name, font_size=30, color=WHITE)
+            label.next_to(feature_arrow.get_end(), LEFT, buff=0.2)
+            label.add_updater(lambda m, a=feature_arrow: m.next_to(a.get_end(), LEFT, buff=0.2))
+            feature_labels.add(label)
 
         # Keep left-side numbers aligned to their neurons during initial movements
         for (txt, idx), label in zip(nums_spec, side_nums):
@@ -147,28 +176,47 @@ class MLPZoomNetwork(Scene):
             run_time=2.0
         )
 
-        # Show input vector
-        self.play(FadeIn(side_nums, shift=LEFT * 0.8), run_time=0.8)
+        # Show input vector with arrows and labels
+        self.play(
+            FadeIn(side_nums, shift=LEFT * 0.8), 
+            *[GrowArrow(arrow) for arrow in arrows],
+            *[FadeIn(label) for label in feature_labels],
+            run_time=0.8
+        )
         
-        # Make the input vector follow the focus group move
-        focus_group.add(side_nums)
+        # Make the input vector, arrows, and labels follow the focus group move
+        focus_group.add(side_nums, arrows, feature_labels)
 
         # Move to upper area (the input vector follows because it's in focus_group)
         self.play(focus_group.animate.to_edge(UP, buff=0.5), run_time=1.0)
         
         # Create and position arrow (after movements are complete)
-        arrow_start = focus_group.get_bottom() + DOWN * 0.3
+        # Anchor relative to the last two layers + their connections only,
+        # so side annotations don't affect placement.
+        anchor_group = VGroup(last_two_layers, last_layer_connections)
+        arrow_start = anchor_group.get_bottom() + DOWN * 0.3
         arrow_end = arrow_start + DOWN * 1.0
         arrow = Arrow(start=arrow_start, end=arrow_end, color=WHITE, stroke_width=2, buff=0)
         matrix_group.move_to(arrow_end + DOWN * 1.0)
         
-        # Dim neurons and grow arrow simultaneously
+        # Dim neurons, arrows, labels and grow arrow simultaneously
         self.play(
             *[node.animate.set_opacity(0.2) for layer in last_two_layers for node in layer],
             side_nums.animate.set_opacity(0.2),
+            arrows.animate.set_opacity(0.2),
+            feature_labels.animate.set_opacity(0.2),
             GrowArrow(arrow),
             run_time=1.0
         )
+        
+        # Clear updaters immediately after dimming to prevent reappearance
+        for feature_arrow in arrows:
+            feature_arrow.clear_updaters()
+        for flabel in feature_labels:
+            flabel.clear_updaters()
+        
+        # Remove arrows and labels from focus_group to prevent them from following transforms
+        focus_group.remove(arrows, feature_labels)
         
         # Morph a copy of connections into the matrix for a nice reveal
         connections_copy = solid_connections.copy()
@@ -190,10 +238,20 @@ class MLPZoomNetwork(Scene):
         equal_sign.next_to(input_vec_col, RIGHT, buff=0.35)
         result_vec.next_to(equal_sign, RIGHT, buff=0.35)
 
-        # Remove left-side updaters before transforming labels into the column vector
+        # Remove left-side updaters before transforming the side vector into the column vector
         for label in side_nums:
             label.clear_updaters()
 
+        # Fade out arrows and labels first, then do the transformation
+        self.play(
+            FadeOut(arrows),
+            FadeOut(feature_labels),
+            run_time=0.3
+        )
+        
+        # Fully remove arrows/labels from scene immediately
+        self.remove(arrows, feature_labels)
+        
         # Quick flash on neurons while transforming the side vector into the column vector
         self.play(
             LaggedStart(
@@ -227,7 +285,7 @@ class MLPZoomNetwork(Scene):
             FadeIn(right_side_nums, shift=RIGHT * 0.8),
             run_time=1.0
         )
-
+        self.play(FadeOut(right_side_nums))
         # Numbers are placed; no more movement expected, so remove updaters
         for label in right_side_nums:
             label.clear_updaters()

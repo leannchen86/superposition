@@ -14,6 +14,7 @@ class SuperpositionAnimation(Scene):
             x_length=5,
             y_length=3,
             axis_config={"color": GRAY},
+            tips=False,
             x_axis_config={
                 "include_numbers": True,
                 "numbers_to_include": [0, 10, 20, 30, 40, 50]
@@ -55,10 +56,16 @@ class SuperpositionAnimation(Scene):
         loss_values = base_loss + harmonic_noise + jitter_noise
         # Keep a higher floor to avoid touching the bottom axis
         loss_values = np.clip(loss_values, 1.25, 1.6)
-        # Enforce a flat/non-increasing tail after step 20 so it doesn't slope upward
+        # Add mild fluctuations in the tail instead of enforcing flat behavior
         tail_start_idx = np.searchsorted(steps, 20.0)
         if tail_start_idx < len(loss_values):
-            loss_values[tail_start_idx:] = np.minimum.accumulate(loss_values[tail_start_idx:])
+            # Add small random variations to maintain ups and downs
+            tail_length = len(loss_values) - tail_start_idx
+            mild_variations = 0.003 * rng.standard_normal(tail_length)
+            # Apply a smoothing to make variations gradual
+            for i in range(1, tail_length):
+                mild_variations[i] = 0.7 * mild_variations[i-1] + 0.3 * mild_variations[i]
+            loss_values[tail_start_idx:] += mild_variations
 
         # Create initial feature vectors (random angles)
         num_features = 5

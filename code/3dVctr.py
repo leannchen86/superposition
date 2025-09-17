@@ -1,187 +1,116 @@
 from manim import *
 import numpy as np
 
+
 class VectorProjection3Dto2D(ThreeDScene):
     def construct(self):
-        # Set up the 3D scene
-        self.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
-        
-        # Define the original 3D vector and the projected 2D vector
-        vector_3d = np.array([0.3, 0.7, 0.6])
-        vector_2d = np.array([0.6, 1.0, 0])  # Adding 0 for z-component in 3D space
-        
-        # Create 3D axes
-        axes_3d = ThreeDAxes(
-            x_range=[-0.5, 1.5, 0.5],
-            y_range=[-0.5, 1.5, 0.5],
-            z_range=[-0.5, 1.5, 0.5],
-            x_length=6,
-            y_length=6,
-            z_length=6
+        # Match 3D space (grid, axes, vertical lines, camera) from what_is_a_feature.py
+        start_distance = 8.0
+        self.set_camera_orientation(phi=85 * DEGREES, theta=30 * DEGREES, distance=start_distance, zoom=1.5)
+
+        grid = NumberPlane(
+            x_range=(-5, 5, 1),
+            y_range=(-5, 5, 1),
+            background_line_style={
+                "stroke_color": BLUE_E,
+                "stroke_width": 1,
+                "stroke_opacity": 0.5,
+            },
+            axis_config={"include_numbers": False},
         )
-        
-        # Add axis labels for 3D
-        x_label_3d = axes_3d.get_x_axis_label(Tex("x"))
-        y_label_3d = axes_3d.get_y_axis_label(Tex("y"))
-        z_label_3d = axes_3d.get_z_axis_label(Tex("z"))
-        
-        # Create the 3D vector
-        vector_3d_arrow = Arrow3D(
-            start=axes_3d.coords_to_point(0, 0, 0),
-            end=axes_3d.coords_to_point(*vector_3d),
-            color=BLUE,
-            stroke_width=8
+
+        vertical_lines = VGroup(
+            *[
+                Line(
+                    start=grid.c2p(x, y, 0),
+                    end=grid.c2p(x, y, 5),
+                    color=BLUE_E,
+                    stroke_width=1,
+                    stroke_opacity=0.5,
+                )
+                for x in range(-5, 6)
+                for y in range(-5, 6)
+            ]
         )
-        
-        # Create vector label
-        vector_3d_label = MathTex(r"\vec{v}_{3D} = \begin{bmatrix} 0.3 \\ 0.7 \\ 0.6 \end{bmatrix}")
-        vector_3d_label.rotate(PI/2, axis=RIGHT)
-        vector_3d_label.rotate(PI/4, axis=OUT)
-        vector_3d_label.next_to(vector_3d_arrow.get_end(), UP)
-        
-        # Title
-        title = Text("3D Vector Projection to 2D", font_size=36)
-        title.to_edge(UP)
-        # Fixed-in-frame handled via add_fixed_in_frame_mobjects
-        
-        # Scene 1: Show 3D vector
-        self.add_fixed_in_frame_mobjects(title)
-        self.play(Create(axes_3d), Write(x_label_3d), Write(y_label_3d), Write(z_label_3d))
-        self.play(Create(vector_3d_arrow))
-        self.play(Write(vector_3d_label))
-        self.wait(2)
-        
-        # Create projection plane (xy-plane)
-        projection_plane = Surface(
-            lambda u, v: axes_3d.coords_to_point(u, v, 0),
-            u_range=[-0.5, 1.5],
-            v_range=[-0.5, 1.5],
-            fill_opacity=0.3,
-            fill_color=GREEN
+
+        axes = ThreeDAxes(
+            x_range=(-5, 5, 1),
+            y_range=(-5, 5, 1),
+            z_range=(0, 5, 1),
+            x_length=10,
+            y_length=10,
+            z_length=5,
+            axis_config={"color": WHITE, "include_tip": False, "include_numbers": False},
         )
+
+        # Add static elements to match the reference scene
+        self.add(grid, vertical_lines, axes)
+
+        # Render the [0.3, 0.7, 0.6] vector like a feature vector (normalized, length 2)
+        raw_vector = np.array([0.3, 0.7, 0.6])
+        normalized_direction = raw_vector / np.linalg.norm(raw_vector)
+        vector_length = 2.0
+        end_point = normalized_direction * vector_length
+
+        feature_vector_arrow = Arrow3D(start=ORIGIN, end=end_point, color=RED)
         
-        plane_label = Text("Projection Plane (z=0)", font_size=24, color=GREEN)
-        plane_label.rotate(PI/2, axis=RIGHT)
-        plane_label.move_to(axes_3d.coords_to_point(0.75, 0.75, 0))
+        # Add vector label for the red 3D arrow
+        vector_label = MathTex(r"x = \begin{bmatrix} 0.3 \\ 0.7 \\ 0.6 \end{bmatrix}", font_size=36, color=WHITE)
+        vector_label.next_to(feature_vector_arrow.get_end(), LEFT*3.0 + DOWN*0.9, buff=0.8)
         
-        # Show projection plane
-        self.play(Create(projection_plane))
-        self.play(Write(plane_label))
-        self.wait(1)
+        self.play(FadeIn(feature_vector_arrow), run_time=0.8)
+        self.add_fixed_orientation_mobjects(vector_label)
+        self.play(FadeIn(vector_label), run_time=0.8)
+        self.wait(1.0)
+
+        # Projection to the xy-plane (z = 0)
+        proj_end_point = np.array([end_point[0], end_point[1], 0.0])
+
+        # Dashed connector from 3D tip to its projection on the plane
+        projection_line = DashedLine(end_point, proj_end_point, color=YELLOW, dash_length=0.1)
         
-        # Show projection process with dotted lines
-        projection_lines = VGroup()
+        # Add equation h = W*x when projection line appears
+        projection_equation = MathTex(r"W \cdot x", font_size=36, color=WHITE)
+        projection_equation.next_to(projection_line.get_center(), LEFT*0.2 + UP*0.5, buff=0.8)
         
-        # Line from vector tip to projection
-        proj_line = DashedLine(
-            axes_3d.coords_to_point(*vector_3d),
-            axes_3d.coords_to_point(vector_3d[0], vector_3d[1], 0),
-            color=YELLOW,
-            dash_length=0.1
-        )
-        projection_lines.add(proj_line)
-        
-        # Create the projected vector
-        vector_2d_arrow = Arrow3D(
-            start=axes_3d.coords_to_point(0, 0, 0),
-            end=axes_3d.coords_to_point(vector_3d[0], vector_3d[1], 0),
-            color=RED,
-            stroke_width=8
-        )
-        
-        # Show projection process
-        self.play(Create(proj_line))
-        self.play(Create(vector_2d_arrow))
-        self.wait(1)
-        
-        # Add transformation matrix
-        transformation_text = MathTex(
-            r"P = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \end{bmatrix}",
-            font_size=36
-        )
-        # Fixed-in-frame handled via add_fixed_in_frame_mobjects
-        transformation_text.to_edge(LEFT).shift(UP)
-        
-        # Show matrix multiplication
-        multiplication = MathTex(
-            r"P \vec{v}_{3D} = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \end{bmatrix} \begin{bmatrix} 0.3 \\ 0.7 \\ 0.6 \end{bmatrix} = \begin{bmatrix} 0.3 \\ 0.7 \end{bmatrix}",
-            font_size=28
-        )
-        # Fixed-in-frame handled via add_fixed_in_frame_mobjects
-        multiplication.next_to(transformation_text, DOWN, aligned_edge=LEFT)
-        
-        self.add_fixed_in_frame_mobjects(transformation_text, multiplication)
-        self.play(Write(transformation_text))
-        self.wait(1)
-        self.play(Write(multiplication))
-        self.wait(2)
-        
-        # Transition to 2D view
+        self.play(FadeIn(projection_line), run_time=0.6)
+        self.add_fixed_orientation_mobjects(projection_equation)
+        self.play(FadeIn(projection_equation), run_time=0.8)
+
+        # 2D projected vector on the xy-plane (2D Arrow like in VectorOrthogonality)
+        projected_vector_arrow = Arrow(ORIGIN, proj_end_point, color=BLUE, buff=0, stroke_width=4)
+        self.play(FadeIn(projected_vector_arrow), run_time=0.8)
+        self.wait(0.8)
+
+        # Fade out 3D elements and emphasize only the blue 2D vector and axes
+        background_elements = VGroup(grid, vertical_lines, projection_line)
         self.play(
-            FadeOut(vector_3d_arrow),
-            FadeOut(vector_3d_label),
-            FadeOut(projection_plane),
-            FadeOut(plane_label),
-            FadeOut(proj_line),
-            FadeOut(z_label_3d)
+            background_elements.animate.set_opacity(0.1),
+            FadeOut(feature_vector_arrow),
+            FadeOut(vector_label),
+            FadeOut(projection_equation),
+            run_time=0.5
         )
-        
-        # Move camera to 2D view
-        self.move_camera(phi=0, theta=-PI/2)
-        
-        # Create 2D axes
-        axes_2d = Axes(
-            x_range=[-0.5, 1.5, 0.5],
-            y_range=[-0.5, 1.5, 0.5],
-            x_length=6,
-            y_length=6
+
+        focus_center = 0.5 * proj_end_point
+        self.move_camera(
+            phi=0 * DEGREES,     # top-down view onto xy-plane
+            theta=0 * DEGREES,   # keep x to the right (0°), y up (90°)
+            gamma=0 * DEGREES,   # no roll
+            frame_center=focus_center,
+            distance=start_distance / 3,
+            run_time=1.5,
         )
+        self.wait(0.8)
+
+        # Additional zoom-in similar to frame.scale(0.7) (use 0.5 for stronger zoom)
+        # Add a tiny Wait so Scene.play always has an animation even if no camera diff is detected
+        self.move_camera(distance=(start_distance / 3) * 0.7, added_anims=[Wait(0.001)], run_time=0.8)
         
-        x_label_2d = axes_2d.get_x_axis_label(Tex("x"))
-        y_label_2d = axes_2d.get_y_axis_label(Tex("y"))
+        # Show the 2D result equation
+        result_equation = MathTex(r"h = \begin{bmatrix} 0.6 \\ 1.0 \end{bmatrix}", font_size=36, color=WHITE)
+        result_equation.next_to(projected_vector_arrow.get_end(), UP, buff=0.3)
         
-        # Transform the existing vector to 2D representation
-        vector_2d_final = Arrow(
-            start=axes_2d.coords_to_point(0, 0),
-            end=axes_2d.coords_to_point(0.6, 1.0),  # Final transformed vector
-            color=RED,
-            stroke_width=8
-        )
-        
-        # But wait - let's show the actual mathematical transformation
-        # The problem states the result is [0.6, 1], not [0.3, 0.7]
-        # This suggests there's a scaling/transformation beyond simple projection
-        
-        # Update the math to show the complete transformation
-        complete_transform = MathTex(
-            r"T \vec{v}_{3D} = \begin{bmatrix} 2 & 0 & 0 \\ 0 & \frac{10}{7} & 0 \end{bmatrix} \begin{bmatrix} 0.3 \\ 0.7 \\ 0.6 \end{bmatrix} = \begin{bmatrix} 0.6 \\ 1.0 \end{bmatrix}",
-            font_size=24
-        )
-        # Fixed-in-frame handled via add_fixed_in_frame_mobjects
-        complete_transform.to_edge(LEFT).shift(DOWN * 2)
-        self.add_fixed_in_frame_mobjects(complete_transform)
-        
-        # Replace the 3D scene with 2D
-        self.play(
-            Transform(axes_3d, axes_2d),
-            Transform(x_label_3d, x_label_2d),
-            Transform(y_label_3d, y_label_2d),
-            Transform(vector_2d_arrow, vector_2d_final),
-            Transform(multiplication, complete_transform)
-        )
-        
-        # Add final vector label
-        vector_2d_label = MathTex(r"\vec{v}_{2D} = \begin{bmatrix} 0.6 \\ 1.0 \end{bmatrix}")
-        vector_2d_label.next_to(vector_2d_final.get_end(), UR)
-        self.add_fixed_in_frame_mobjects(vector_2d_label)
-        
-        self.play(Write(vector_2d_label))
-        
-        # Summary text
-        summary = Text("3D → 2D Transformation Complete!", font_size=28, color=GREEN)
-        # Fixed-in-frame handled via add_fixed_in_frame_mobjects
-        summary.to_edge(DOWN)
-        self.add_fixed_in_frame_mobjects(summary)
-        
-        self.play(Write(summary))
-        self.wait(3)
+        self.add_fixed_orientation_mobjects(result_equation)
+        self.play(FadeIn(result_equation), run_time=0.8)
+        self.wait(2)

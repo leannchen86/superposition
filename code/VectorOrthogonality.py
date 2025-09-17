@@ -12,9 +12,6 @@ class VectorOrthogonality(MovingCameraScene):
             axis_config={"color": GREY},
             tips=False,
         )
-        # Add axis labels
-        x_label = MathTex("x").next_to(axes.x_axis, RIGHT)
-        y_label = MathTex("y").next_to(axes.y_axis, UP)
         # Define colors for vectors
         colors = [RED, BLUE, GREEN, YELLOW, PURPLE]
         # Helper to generate a 2-unit vector (arrow) at a given angle in degrees
@@ -41,7 +38,7 @@ class VectorOrthogonality(MovingCameraScene):
         dot_product_text = MathTex("\\text{dot product} = 0").shift(3*RIGHT + 2*UP)
         
         # Animation sequence - step-by-step demonstration
-        self.play(FadeIn(axes), FadeIn(x_label), FadeIn(y_label))
+        self.play(FadeIn(axes))
         self.play(Create(vec1), Create(vec2), run_time=1.2)
         self.play(Create(angle_arc), Create(angle_label), run_time=1)
         self.play(Write(dot_product_text), run_time=1.5)
@@ -153,7 +150,7 @@ class VectorOrthogonality(MovingCameraScene):
         proj_line = DashedLine(
             start=2*vec_b_dir, 
             end=proj_point,
-            color=WHITE,
+            color=BLUE,
             stroke_width=3,
             dash_length=0.2
         )
@@ -162,18 +159,28 @@ class VectorOrthogonality(MovingCameraScene):
         proj_line_solid = Line(
             start=ORIGIN,
             end=proj_point,
-            color=WHITE,
+            color=BLUE,
             stroke_width=5
         )
         
         # Show projection
-        #zoom the camera in on the projection
-        self.play(self.camera.frame.animate.scale(0.5).move_to(proj_point))
-        self.play(Create(proj_line))
+        #zoom the camera in on the projection (less aggressive zoom)
+        self.play(self.camera.frame.animate.scale(0.7).move_to(proj_point))
+        
+        # Dim the other vectors while creating the projection line
+        other_vectors = [vectors[2], vectors[3], vectors[4]]  # green, yellow, purple
+        self.play(
+            Create(proj_line),
+            *[vec.animate.set_color(GREY).set_opacity(0.3) for vec in other_vectors],
+            run_time=1.5
+        )
         self.play(Create(proj_line_solid))
         self.wait(0.5)
         
-        # Add projection label
-        proj_text = Tex(r"Projection causes overlap", font_size=20, color=ORANGE).shift(2.5*RIGHT + 0.8 + 1*UP).set_x(0.5)
+        # Add projection label: place between BLUE (72°) and RED (0°), slightly to the right
+        mid_dir = (vec_a_dir + vec_b_dir)
+        mid_dir = mid_dir / np.linalg.norm(mid_dir)
+        text_pos = 1.4 * mid_dir + np.array([1.1, 0.0, 0.0])
+        proj_text = Tex(r"Projection causes overlap", font_size=24, color=WHITE).move_to(text_pos)
         self.play(Write(proj_text))
         self.wait(1.5)

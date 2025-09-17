@@ -1,4 +1,4 @@
-from manim import Scene, Arrow, Axes, FadeIn, GrowArrow, MathTex, ORIGIN, YELLOW, BLUE, PURPLE, RED, WHITE, DOWN, RIGHT, LEFT, UR, Indicate
+from manim import Scene, Arrow, Axes, FadeIn, GrowArrow, MathTex, ORIGIN, YELLOW, BLUE, PURPLE, RED, WHITE, DOWN, GREY, GRAY, RIGHT, LEFT, UR, Indicate
 import numpy as np
 
 class SuperpositionHeadToTail(Scene):
@@ -42,8 +42,8 @@ class SuperpositionHeadToTail(Scene):
             x_range=[-0.1, 1.3, 0.2],
             y_range=[-0.1, 1.3, 0.2],
             x_length=6, y_length=6,
-            axis_config=dict(include_numbers=False, include_ticks=False),
-            tips=True,
+            axis_config={"color": GREY},
+            tips=False,
         ).to_corner(ORIGIN)
         self.play(FadeIn(axes))
 
@@ -79,7 +79,13 @@ class SuperpositionHeadToTail(Scene):
         self.wait(0.2)
 
         # ---- resultant y from origin ----
-        a_red = make_arrow(O, P(y) - O, RED, width=8)
+        a_red = Arrow(
+            start=O,
+            end=P(y),
+            color=RED,
+            buff=0,
+            stroke_width=4
+        )
         lab_red = MathTex(r"pre-activation\;vector=[0.6,\;1.0]").set_color(RED).scale(0.7)
         lab_red.next_to(P(y), UR, buff=0.2)
         self.play(GrowArrow(a_red))

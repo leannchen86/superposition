@@ -15,12 +15,25 @@ from manim import (
     DR,
     Arrow,
     BLUE,
+    GRAY,
+    GREY,
     PURPLE,
     GrowArrow,
     Tex,
     FadeOut,
     YELLOW,
 )
+
+"""
+Compatibility shim: some Manim versions expose GRAY not GREY. Define GREY if missing.
+"""
+try:
+    GREY
+except NameError:
+    try:
+        GREY = GRAY  # type: ignore[name-defined]
+    except Exception:
+        pass
 
 class MatrixW(Scene):
     def construct(self):
@@ -45,12 +58,8 @@ class MatrixW(Scene):
             y_range=[-0.5, 1.5, 0.5],
             x_length=7,
             y_length=7,
-            axis_config={
-                "color": WHITE,
-                "stroke_width": 2,
-                "include_ticks": False,
-            },
-            tips=True,
+            axis_config={"color": GREY},
+            tips=False,
         )
         # Place axes more towards the middle
         axes.move_to(RIGHT * 2.5)
